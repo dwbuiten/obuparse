@@ -1,7 +1,7 @@
 obuparse
 ========
 
-A simple and portable single file OBU parser written in mostly C89 with a tiny bit of C99,
+A simple and portable single file AV1 OBU parser written in mostly C89 with a tiny bit of C99,
 with a permissive license.
 
 This repository is a work in progress.
