@@ -44,6 +44,7 @@ out of being a work in progress.
 * No allocations; only works on user-provided buffers and the stack.
 * OBU header parsing.
 * Sequence Header OBU parsing.
+* Metadata OBU parsing.
 
 Tools
 -----

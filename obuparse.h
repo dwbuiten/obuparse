@@ -42,6 +42,20 @@ typedef enum {
 } OBPOBUType;
 
 /*
+ * Metadata types for the Metadata OBU.
+ */
+typedef enum {
+    /* 0 Reserved */
+    OBP_METADATA_TYPE_HDR_CLL = 1,
+    OBP_METADATA_TYPE_HDR_MDCV = 2,
+    OBP_METADATA_TYPE_SCALABILITY = 3,
+    OBP_METADATA_TYPE_ITUT_T35 = 4,
+    OBP_METADATA_TYPE_TIMECODE = 5
+    /* 6-31 Unregistered user private */
+    /* 32 and greater Reserved for AOM use */
+} OBPMetadataType;
+
+/*
  * Color primaries.
  *
  * These match ISO/IEC 23091-4/ITU-T H.273.
@@ -204,6 +218,69 @@ typedef struct OBPSequenceHeader {
     int film_grain_params_present;
 } OBPSequenceHeader;
 
+/*
+ * Metadata OBU
+ */
+typedef struct OBPMetadata {
+    OBPMetadataType metadata_type;
+    struct {
+        uint8_t itu_t_t35_country_code; /* Annex A of Recommendation ITU-T T.35. */
+        uint8_t itu_t_t35_country_code_extension_byte;
+        uint8_t *itu_t_t35_payload_bytes;
+        size_t itu_t_t35_payload_bytes_size;
+    } metadata_itut_t35;
+    struct {
+        uint16_t max_cll;
+        uint16_t max_fall;
+    } metadata_hdr_cll;
+    struct {
+        uint16_t primary_chromaticity_x[3];
+        uint16_t primary_chromaticity_y[3];
+        uint16_t white_point_chromaticity_x;
+        uint16_t white_point_chromaticity_y;
+        uint32_t luminance_max;
+        uint32_t luminance_min;
+    } metadata_hdr_mdcv;
+    struct {
+        uint8_t scalability_mode_idc;
+        struct {
+            uint8_t spatial_layers_cnt_minus_1;
+            int spatial_layer_dimensions_present_flag;
+            int spatial_layer_description_present_flag;
+            int temporal_group_description_present_flag;
+            uint8_t scalability_structure_reserved_3bits;
+            uint16_t spatial_layer_max_width[3];
+            uint16_t spatial_layer_max_height[3];
+            uint8_t spatial_layer_ref_id[3];
+            uint8_t temporal_group_size;
+            uint8_t temporal_group_temporal_id[256];
+            int temporal_group_temporal_switching_up_point_flag[256];
+            int temporal_group_spatial_switching_up_point_flag[256];
+            uint8_t temporal_group_ref_cnt[256];
+            uint8_t temporal_group_ref_pic_diff[256][8];
+        } scalability_structure;
+    } metadata_scalability;
+    struct {
+        uint8_t counting_type;
+        int full_timestamp_flag;
+        int discontinuity_flag;
+        int cnt_dropped_flag;
+        uint16_t n_frames;
+        uint8_t seconds_value;
+        uint8_t minutes_value;
+        uint8_t hours_value;
+        int seconds_flag;
+        int minutes_flag;
+        int hours_flag;
+        uint8_t time_offset_length;
+        uint32_t time_offset_value;
+    } metadata_timecode;
+    struct {
+        uint8_t *buf;
+        size_t buf_size;
+    } unregistered;
+} OBPMetadata;
+
 /*******************
  * API structures. *
  *******************/
@@ -260,5 +337,23 @@ int obp_get_next_obu(uint8_t *buf, size_t buf_size, OBPOBUType *obu_type, ptrdif
  *     0 on success, -1 on error.
  */
 int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq_header, OBPError *err);
+
+/*
+ * obp_parse_metadata parses a metadata OBU and fills out the fields in a user-provided OBPMetadata
+ * structure. This OBU's returned payload is *NOT* safe to use once the user-provided 'buf' has
+ * been freed, since it may fill the structure with pointers to offsets that data.
+ *
+ * Input:
+ *     buf      - Input OBU buffer. This is expected to *NOT* contain the OBU header.
+ *     buf_size - Size of the input OBU buffer.
+ *     err      - An error buffer and buffer size to write any error messages into.
+ *
+ * Output:
+ *     metadata - A user provided struture that will be filled in with all the parsed data.
+ *
+ * Returns:
+ *     0 on success, -1 on error.
+ */
+int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBPError *err);
 
 #endif

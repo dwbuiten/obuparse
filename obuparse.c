@@ -15,6 +15,7 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -413,6 +414,118 @@ int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *
 
 color_done:
     _obp_br(seq_header->film_grain_params_present, br, 1);
+
+    return 0;
+}
+
+int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBPError *err)
+{
+    uint64_t val;
+    ptrdiff_t consumed;
+    char err_buf[1024];
+    _OBPBitReader b;
+    _OBPBitReader *br;
+    OBPError error = { &err_buf[0], 1024 };
+
+    int ret = _obp_leb128(buf, buf_size, &val, &consumed, &error);
+    if (ret < 0) {
+        snprintf(err->error, err->size, "Couldn't read metadata type: %s", error.error);
+        return -1;
+    }
+    metadata->metadata_type = val;
+
+    b  = _obp_new_br(buf + consumed, buf_size - consumed);
+    br = &b;
+
+    if (metadata->metadata_type == OBP_METADATA_TYPE_HDR_CLL) {
+        _obp_br(metadata->metadata_hdr_cll.max_cll, br, 16);
+        _obp_br(metadata->metadata_hdr_cll.max_fall, br, 16);
+    } else if (metadata->metadata_type == OBP_METADATA_TYPE_HDR_MDCV) {
+        for (int i = 0; i < 3; i++) {
+            _obp_br(metadata->metadata_hdr_mdcv.primary_chromaticity_x[i], br, 16);
+            _obp_br(metadata->metadata_hdr_mdcv.primary_chromaticity_y[i], br, 16);
+        }
+        _obp_br(metadata->metadata_hdr_mdcv.white_point_chromaticity_x, br, 16);
+        _obp_br(metadata->metadata_hdr_mdcv.white_point_chromaticity_y, br, 16);
+        _obp_br(metadata->metadata_hdr_mdcv.luminance_max, br, 32);
+        _obp_br(metadata->metadata_hdr_mdcv.luminance_min, br, 32);
+    } else if (metadata->metadata_type == OBP_METADATA_TYPE_SCALABILITY) {
+        _obp_br(metadata->metadata_scalability.scalability_mode_idc, br, 8);
+        if (metadata->metadata_scalability.scalability_mode_idc) {
+            /* scalability_structure() */
+            _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layers_cnt_minus_1, br, 2);
+            _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layer_dimensions_present_flag, br, 1);
+            _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layer_description_present_flag, br, 1);
+            _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_description_present_flag, br, 1);
+            _obp_br(metadata->metadata_scalability.scalability_structure.scalability_structure_reserved_3bits, br, 3);
+            if (metadata->metadata_scalability.scalability_structure.spatial_layer_dimensions_present_flag) {
+                for (uint8_t i = 0; i < metadata->metadata_scalability.scalability_structure.spatial_layers_cnt_minus_1; i++) {
+                    _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layer_max_width[i], br, 16);
+                    _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layer_max_height[i], br, 16);
+                }
+            }
+            if (metadata->metadata_scalability.scalability_structure.spatial_layer_description_present_flag) {
+                for (uint8_t i = 0; i < metadata->metadata_scalability.scalability_structure.spatial_layers_cnt_minus_1; i++) {
+                    _obp_br(metadata->metadata_scalability.scalability_structure.spatial_layer_ref_id[i], br, 8);
+                }
+            }
+            if (metadata->metadata_scalability.scalability_structure.temporal_group_description_present_flag) {
+                _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_size, br, 8);
+                for (uint8_t i = 0; i < metadata->metadata_scalability.scalability_structure.temporal_group_size; i++) {
+                    _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_temporal_id[i], br, 3);
+                    _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_temporal_switching_up_point_flag[i], br, 1);
+                    _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_spatial_switching_up_point_flag[i], br, 1);
+                    _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_ref_cnt[i], br, 3);
+                    for (uint8_t j = 0; j < metadata->metadata_scalability.scalability_structure.temporal_group_ref_cnt[i]; j++) {
+                        _obp_br(metadata->metadata_scalability.scalability_structure.temporal_group_ref_pic_diff[i][j], br, 8);
+                    }
+                }
+            }
+        }
+    } else if (metadata->metadata_type == OBP_METADATA_TYPE_ITUT_T35) {
+        size_t offset = 1;
+        _obp_br(metadata->metadata_itut_t35.itu_t_t35_country_code, br, 8);
+        if (metadata->metadata_itut_t35.itu_t_t35_country_code == 0xFF) {
+            _obp_br(metadata->metadata_itut_t35.itu_t_t35_country_code_extension_byte, br, 8);
+            offset++;
+        }
+        metadata->metadata_itut_t35.itu_t_t35_payload_bytes       = buf + consumed + offset;
+        metadata->metadata_itut_t35.itu_t_t35_payload_bytes_size = buf_size - consumed - offset;
+    } else if (metadata->metadata_type == OBP_METADATA_TYPE_TIMECODE) {
+        _obp_br(metadata->metadata_timecode.counting_type, br, 5);
+        _obp_br(metadata->metadata_timecode.full_timestamp_flag, br, 1);
+        _obp_br(metadata->metadata_timecode.discontinuity_flag, br, 1);
+        _obp_br(metadata->metadata_timecode.cnt_dropped_flag, br, 1);
+        _obp_br(metadata->metadata_timecode.n_frames, br, 9);
+        if (metadata->metadata_timecode.full_timestamp_flag) {
+            _obp_br(metadata->metadata_timecode.seconds_value, br, 6);
+            _obp_br(metadata->metadata_timecode.minutes_value, br, 6);
+            _obp_br(metadata->metadata_timecode.hours_value, br, 5);
+        } else {
+            _obp_br(metadata->metadata_timecode.seconds_flag, br, 1);
+            if (metadata->metadata_timecode.seconds_flag) {
+                _obp_br(metadata->metadata_timecode.seconds_value, br, 6);
+                _obp_br(metadata->metadata_timecode.minutes_flag, br, 1);
+                if (metadata->metadata_timecode.minutes_flag) {
+                    _obp_br(metadata->metadata_timecode.minutes_value, br, 6);
+                    _obp_br(metadata->metadata_timecode.hours_flag, br, 1);
+                    if (metadata->metadata_timecode.hours_flag) {
+                        _obp_br(metadata->metadata_timecode.hours_value, br, 5);
+                    }
+                }
+            }
+        }
+        _obp_br(metadata->metadata_timecode.time_offset_length, br, 5);
+        if (metadata->metadata_timecode.time_offset_length > 0) {
+             _obp_br(metadata->metadata_timecode.time_offset_value, br, metadata->metadata_timecode.time_offset_length);
+        }
+    } else if (metadata->metadata_type >= 6 && metadata->metadata_type <= 31) {
+        metadata->unregistered.buf      = buf + consumed;
+        metadata->unregistered.buf_size = buf_size - consumed;
+    } else {
+        snprintf(err->error, err->size, "Invalid metadata type: %"PRIu32"\n", metadata->metadata_type);
+        return -1;
+    }
 
     return 0;
 }
