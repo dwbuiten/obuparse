@@ -119,6 +119,26 @@ int main(int argc, char *argv[])
             printf("OBU info | obu_type = %d | offset = %td | obu_size = %zu | temporal_id = %d | spatial_id = %d\n",
                    obu_type, offset, obu_size, temporal_id, spatial_id);
 
+            switch (obu_type) {
+            case OBP_OBU_SEQUENCE_HEADER: {
+                OBPSequenceHeader hdr = {0};
+                ret = obp_parse_sequence_header(packet_buf + packet_pos + offset, obu_size, &hdr, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse sequence header: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("w = %d h = %d\n", hdr.max_frame_width_minus_1 + 1, hdr.max_frame_height_minus_1 + 1);
+                printf("bitdepth = %d primaries = %d transfer = %d matrix = %d\n", hdr.color_config.BitDepth,
+                       hdr.color_config.color_primaries, hdr.color_config.transfer_characteristics,
+                       hdr.color_config.matrix_coefficients);
+                break;
+            }
+            default:
+                break;
+            }
+
             packet_pos += obu_size + (size_t) offset;
         }
 

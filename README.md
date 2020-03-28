@@ -26,9 +26,14 @@ How?
 Simply copy `obuparse.c` and `obuparser.h` into your project, or use this repository
 as a git submodule.
 
+By default, the parser uses a checked bitreader, but you can define `OBP_UNCHECKED_BITREADER`
+to use the unchecked version if that really matters to you.
+
+All API documentation lives in `obuparse.h`.
+
 There is also a Makefile provided for building a simple shared library on Linux. It
 should be straightforward to build for other OSes; all public symbols are namespaced
-with `obp_`.
+with `obp_`. All public enums and types are namespaced with `OBP`.
 
 Features
 --------
@@ -38,6 +43,7 @@ out of being a work in progress.
 
 * No allocations; only works on user-provided buffers and the stack.
 * OBU header parsing.
+* Sequence Header OBU parsing.
 
 Tools
 -----
