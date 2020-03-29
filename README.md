@@ -50,4 +50,4 @@ Tools
 -----
 
 The `tools` directory contains some example tools used during development. In the
-future, it will gopefully contain some more useful things like an OBU dump tool.
+future, it will hopefully contain some more useful things like an OBU dump tool.
