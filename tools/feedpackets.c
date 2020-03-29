@@ -29,6 +29,7 @@
 #endif
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,6 +134,18 @@ int main(int argc, char *argv[])
                 printf("bitdepth = %d primaries = %d transfer = %d matrix = %d\n", hdr.color_config.BitDepth,
                        hdr.color_config.color_primaries, hdr.color_config.transfer_characteristics,
                        hdr.color_config.matrix_coefficients);
+                break;
+            }
+            case OBP_OBU_TILE_LIST: {
+                OBPTileList tile_list = {0};
+                ret = obp_parse_tile_list(packet_buf + packet_pos + offset, obu_size, &tile_list, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse metadata: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("tile list count: %"PRIu32"\n", ((uint32_t) tile_list.tile_count_minus_1) + 1);
                 break;
             }
             case OBP_OBU_METADATA: {

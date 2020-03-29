@@ -219,6 +219,23 @@ typedef struct OBPSequenceHeader {
 } OBPSequenceHeader;
 
 /*
+ * Tile List OBU
+ */
+typedef struct OBPTileList {
+    uint8_t output_frame_width_in_tiles_minus_1;
+    uint8_t output_frame_height_in_tiles_minus_1;
+    uint16_t tile_count_minus_1;
+    struct {
+        uint8_t anchor_frame_idx;
+        uint8_t anchor_tile_row;
+        uint8_t anchor_tile_col;
+        uint16_t tile_data_size_minus_1;
+        uint8_t *coded_tile_data;
+        size_t coded_tile_data_size;
+    } tile_list_entry[65536];
+} OBPTileList;
+
+/*
  * Metadata OBU
  */
 typedef struct OBPMetadata {
@@ -355,5 +372,23 @@ int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *
  *     0 on success, -1 on error.
  */
 int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBPError *err);
+
+/*
+ * obp_parse_tile_list parses a tile list OBU and fills out the fields in a user-provided OBPTileList
+ * structure. This OBU's returned payload is *NOT* safe to use once the user-provided 'buf' has
+ * been freed, since it may fill the structure with pointers to offsets that data.
+ *
+ * Input:
+ *     buf      - Input OBU buffer. This is expected to *NOT* contain the OBU header.
+ *     buf_size - Size of the input OBU buffer.
+ *     err      - An error buffer and buffer size to write any error messages into.
+ *
+ * Output:
+ *     tile_list - A user provided struture that will be filled in with all the parsed data.
+ *
+ * Returns:
+ *     0 on success, -1 on error.
+ */
+int obp_parse_tile_list(uint8_t *buf, size_t buf_size, OBPTileList *tile_list, OBPError *err);
 
 #endif

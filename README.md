@@ -45,6 +45,7 @@ out of being a work in progress.
 * OBU header parsing.
 * Sequence Header OBU parsing.
 * Metadata OBU parsing.
+* Tile List OBU parsing.
 
 Tools
 -----

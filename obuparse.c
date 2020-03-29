@@ -418,6 +418,47 @@ color_done:
     return 0;
 }
 
+int obp_parse_tile_list(uint8_t *buf, size_t buf_size, OBPTileList *tile_list, OBPError *err)
+{
+    size_t pos = 0;
+
+    if (buf_size < 4) {
+        snprintf(err->error, err->size, "Tile list OBU must be at least 4 bytes.");
+        return -1;
+    }
+
+    tile_list->output_frame_width_in_tiles_minus_1  = buf[0];
+    tile_list->output_frame_height_in_tiles_minus_1 = buf[1];
+    tile_list->tile_count_minus_1                   = (((uint16_t) buf[2]) << 8) | buf[3];
+    pos += 4;
+
+    for (uint16_t i = 0; i < tile_list->tile_count_minus_1; i++) {
+        if (pos + 5 > buf_size) {
+            snprintf(err->error, err->size, "Tile list OBU malformed: Not enough bytes for next tile_list_entry().");
+            return -1;
+        }
+
+        tile_list->tile_list_entry[i].anchor_frame_idx       = buf[pos];
+        tile_list->tile_list_entry[i].anchor_tile_row        = buf[pos + 1];
+        tile_list->tile_list_entry[i].anchor_tile_col        = buf[pos + 2];
+        tile_list->tile_list_entry[i].tile_data_size_minus_1 = (((uint16_t) buf[pos + 3]) << 8) | buf[pos + 4];
+        pos += 5;
+
+        size_t N = 8 * (((size_t) tile_list->tile_list_entry[i].tile_data_size_minus_1) + 1);
+
+        if (pos + N > buf_size) {
+            snprintf(err->error, err->size, "Tile list OBU malformed: Not enough bytes for next tile_list_entry()'s data.");
+            return -1;
+        }
+
+        tile_list->tile_list_entry[i].coded_tile_data      = buf + pos;
+        tile_list->tile_list_entry[i].coded_tile_data_size = N;
+        pos += N;
+    }
+
+    return 0;
+}
+
 int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBPError *err)
 {
     uint64_t val;
