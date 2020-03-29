@@ -135,6 +135,18 @@ int main(int argc, char *argv[])
                        hdr.color_config.matrix_coefficients);
                 break;
             }
+            case OBP_OBU_METADATA: {
+                OBPMetadata meta = {0};
+                ret = obp_parse_metadata(packet_buf + packet_pos + offset, obu_size, &meta, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse metadata: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("metadata_type = %d\n", meta.metadata_type);
+                break;
+            }
             default:
                 break;
             }
