@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "obuparse.h"
 
@@ -40,6 +41,9 @@ int main(int argc, char *argv[])
 {
     FILE *ivf;
     int ret = 0;
+    OBPSequenceHeader hdr = {0};
+    OBPState state = {0};
+    int seen_seq = 0;
 
     if (argc < 2) {
         printf("Usage: %s file.ivf\n", argv[0]);
@@ -61,11 +65,14 @@ int main(int argc, char *argv[])
     }
 
     while (!feof(ivf))
+//    do
     {
         uint8_t frame_header[12];
         uint8_t *packet_buf;
         size_t packet_size;
         size_t packet_pos = 0;
+        OBPFrameHeader frame_hdr = {0};
+        int SeenFrameHeader = 0;
 
         size_t read_in = fread(&frame_header[0], 1, 12, ivf);
         if (read_in != 12) {
@@ -121,8 +128,14 @@ int main(int argc, char *argv[])
                    obu_type, offset, obu_size, temporal_id, spatial_id);
 
             switch (obu_type) {
+            case OBP_OBU_TEMPORAL_DELIMITER: {
+                assert(obu_size == 0);
+                SeenFrameHeader = 0;
+                break;
+            }
             case OBP_OBU_SEQUENCE_HEADER: {
-                OBPSequenceHeader hdr = {0};
+                seen_seq = 1;
+                memset(&hdr, 0, sizeof(hdr));
                 ret = obp_parse_sequence_header(packet_buf + packet_pos + offset, obu_size, &hdr, &err);
                 if (ret < 0) {
                     free(packet_buf);
@@ -136,6 +149,86 @@ int main(int argc, char *argv[])
                        hdr.color_config.matrix_coefficients);
                 break;
             }
+            case OBP_OBU_FRAME: {
+                OBPTileGroup tiles;
+                memset(&frame_hdr, 0, sizeof(frame_hdr));
+                if (!seen_seq) {
+                    free(packet_buf);
+                    printf("Encountered Frame Header OBU before Sequence Header OBU.\n");
+                    ret = 1;
+                    goto end;
+                }
+                ret = obp_parse_frame(packet_buf + packet_pos + offset, obu_size, &hdr, &state, temporal_id, spatial_id, &frame_hdr, &tiles, &SeenFrameHeader, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse frame header: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("rw=%"PRId32" rh=%"PRId32"\n", frame_hdr.RenderWidth, frame_hdr.RenderHeight);
+                printf("TileRows=%"PRIu16" TileCols=%"PRIu16"\n", frame_hdr.tile_info.TileRows, frame_hdr.tile_info.TileCols);
+                printf("frame_refs_short_signaling = %"PRIu8"\n", frame_hdr.frame_refs_short_signaling);
+                printf("frame_type = %"PRIu8"\n", frame_hdr.frame_type);
+                printf("base_q_idx = %"PRIu8"\n", frame_hdr.quantization_params.base_q_idx);
+                printf("cdef_bits = %"PRIu8"\n", frame_hdr.cdef_params.cdef_bits);
+                for(int i = 0; i < 8; i++) {
+                    printf("cdef_y_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_pri_strength[i]);
+                    printf("cdef_y_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_sec_strength[i]);
+                    printf("cdef_uv_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_pri_strength[i]);
+                    printf("cdef_uv_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_sec_strength[i]);
+                }
+                for (int i = 0; i < 3; i++) {
+                    printf("lr_type = %d\n", frame_hdr.lr_params.lr_type[i]);
+                }
+                printf("lr_uv_shift=%d lr_unit_shift=%d\n", frame_hdr.lr_params.lr_uv_shift, frame_hdr.lr_params.lr_unit_shift);
+                printf("tx_mode_select = %d\n", frame_hdr.tx_mode_select);
+                printf("grain_seed = %d\n", frame_hdr.film_grain_params.grain_seed);
+                printf("point_cr_scaling[1] = %d\n", frame_hdr.film_grain_params.point_cr_scaling[1]);
+                printf("ar_coeffs_cr_plus_128[21] = %d\n", frame_hdr.film_grain_params.ar_coeffs_cr_plus_128[21]);
+                printf("NumTiles = %"PRIu16" tg_start = %"PRIu16" tg_end = %"PRIu16"\n", tiles.NumTiles, tiles.tg_start, tiles.tg_end);
+                for (uint16_t t = tiles.tg_start; t <= tiles.tg_end; t++) {
+                    printf("    TileSize[%"PRIu16"] = %"PRIu64"\n", t, tiles.TileSize[t]);
+                }
+                break;
+            }
+            case OBP_OBU_REDUNDANT_FRAME_HEADER:
+            case OBP_OBU_FRAME_HEADER: {
+                memset(&frame_hdr, 0, sizeof(frame_hdr));
+                if (!seen_seq) {
+                    free(packet_buf);
+                    printf("Encountered Frame Header OBU before Sequence Header OBU.\n");
+                    ret = 1;
+                    goto end;
+                }
+                ret = obp_parse_frame_header(packet_buf + packet_pos + offset, obu_size, &hdr, &state, temporal_id, spatial_id, &frame_hdr, &SeenFrameHeader, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse frame header: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("rw=%"PRId32" rh=%"PRId32"\n", frame_hdr.RenderWidth, frame_hdr.RenderHeight);
+                printf("TileRows=%"PRIu16" TileCols=%"PRIu16"\n", frame_hdr.tile_info.TileRows, frame_hdr.tile_info.TileCols);
+                printf("frame_type = %"PRIu8"\n", frame_hdr.frame_type);
+                printf("base_q_idx = %"PRIu8"\n", frame_hdr.quantization_params.base_q_idx);
+                printf("cdef_bits = %"PRIu8"\n", frame_hdr.cdef_params.cdef_bits);
+                for(int i = 0; i < 8; i++) {
+                    printf("cdef_y_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_pri_strength[i]);
+                    printf("cdef_y_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_sec_strength[i]);
+                    printf("cdef_uv_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_pri_strength[i]);
+                    printf("cdef_uv_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_sec_strength[i]);
+                }
+                for (int i = 0; i < 3; i++) {
+                    printf("lr_type = %d\n", frame_hdr.lr_params.lr_type[i]);
+                }
+                printf("lr_uv_shift=%d lr_unit_shift=%d\n", frame_hdr.lr_params.lr_uv_shift, frame_hdr.lr_params.lr_unit_shift);
+                printf("tx_mode_select = %d\n", frame_hdr.tx_mode_select);
+                printf("grain_seed = %d\n", frame_hdr.film_grain_params.grain_seed);
+                printf("point_cr_scaling[1] = %d\n", frame_hdr.film_grain_params.point_cr_scaling[1]);
+                printf("ar_coeffs_cr_plus_128[21] = %d\n", frame_hdr.film_grain_params.ar_coeffs_cr_plus_128[21]);
+
+                break;
+            }
             case OBP_OBU_TILE_LIST: {
                 OBPTileList tile_list = {0};
                 ret = obp_parse_tile_list(packet_buf + packet_pos + offset, obu_size, &tile_list, &err);
@@ -146,6 +239,21 @@ int main(int argc, char *argv[])
                     goto end;
                 }
                 printf("tile list count: %"PRIu32"\n", ((uint32_t) tile_list.tile_count_minus_1) + 1);
+                break;
+            }
+            case OBP_OBU_TILE_GROUP: {
+                OBPTileGroup tiles = {0};
+                ret = obp_parse_tile_group(packet_buf + packet_pos + offset, obu_size, &frame_hdr, &tiles, &SeenFrameHeader, &err);
+                if (ret < 0) {
+                    free(packet_buf);
+                    printf("Failed to parse tile group: %s\n", err.error);
+                    ret = 1;
+                    goto end;
+                }
+                printf("NumTiles = %"PRIu16" tg_start = %"PRIu16" tg_end = %"PRIu16"\n", tiles.NumTiles, tiles.tg_start, tiles.tg_end);
+                for (uint16_t t = tiles.tg_start; t <= tiles.tg_end; t++) {
+                    printf("    TileSize[%"PRIu16"] = %"PRIu64"\n", t, tiles.TileSize[t]);
+                }
                 break;
             }
             case OBP_OBU_METADATA: {
@@ -175,6 +283,7 @@ int main(int argc, char *argv[])
             goto end;
         }
     }
+    //} while(0);
 
 end:
     fclose(ivf);

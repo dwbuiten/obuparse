@@ -135,6 +135,16 @@ typedef enum {
     /* 3 Reserved */
 } OBPChromaSamplePosition;
 
+/*
+ * Frame types.
+ */
+typedef enum {
+    OBP_KEY_FRAME = 0,
+    OBP_INTER_FRAME = 1,
+    OBP_INTRA_ONLY_FRAME = 2,
+    OBP_SWITCH_FRAME = 3
+} OBPFrameType;
+
 /**************************************************
  * Various structures from the AV1 specification. *
  **************************************************/
@@ -217,6 +227,170 @@ typedef struct OBPSequenceHeader {
     } color_config;
     int film_grain_params_present;
 } OBPSequenceHeader;
+
+/*
+ * Film Grain Parameers.
+ */
+typedef struct OBPFilmGrainParameters {
+    int apply_grain;
+    uint16_t grain_seed;
+    int update_grain;
+    uint8_t film_grain_params_ref_idx;
+    uint8_t num_y_points;
+    uint8_t point_y_value[16];
+    uint8_t point_y_scaling[16];
+    int chroma_scaling_from_luma;
+    uint8_t num_cb_points;
+    uint8_t point_cb_value[16];
+    uint8_t point_cb_scaling[16];
+    uint8_t num_cr_points;
+    uint8_t point_cr_value[16];
+    uint8_t point_cr_scaling[16];
+    uint8_t grain_scaling_minus_8;
+    uint8_t ar_coeff_lag;
+    uint8_t ar_coeffs_y_plus_128[24];
+    uint8_t ar_coeffs_cb_plus_128[25];
+    uint8_t ar_coeffs_cr_plus_128[25];
+    uint8_t ar_coeff_shift_minus_6;
+    uint8_t grain_scale_shift;
+    uint8_t cb_mult;
+    uint8_t cb_luma_mult;
+    uint16_t cb_offset;
+    uint8_t cr_mult;
+    uint8_t cr_luma_mult;
+    uint16_t cr_offset;
+    int overlap_flag;
+    int clip_to_restricted_range;
+} OBPFilmGrainParameters;
+
+/*
+ * Frame Header OBU
+ */
+typedef struct OBPFrameHeader {
+    int show_existing_frame;
+    uint8_t frame_to_show_map_idx;
+    struct {
+        uint32_t frame_presentation_time;
+    } temporal_point_info;
+    uint32_t display_frame_id;
+    /* load_grain_params() unimplemented. */
+    OBPFrameType frame_type;
+    int show_frame;
+    int showable_frame;
+    int error_resilient_mode;
+    int disable_cdf_update;
+    int allow_screen_content_tools;
+    int force_integer_mv;
+    uint32_t current_frame_id;
+    int frame_size_override_flag;
+    uint8_t order_hint;
+    uint8_t primary_ref_frame;
+    int buffer_removal_time_present_flag;
+    uint32_t buffer_removal_time[32];
+    uint8_t refresh_frame_flags;
+    uint8_t ref_order_hint[8];
+    uint32_t frame_width_minus_1;
+    uint32_t frame_height_minus_1;
+    struct {
+        int use_superres;
+        uint8_t coded_denom;
+    } superres_params;
+    int render_and_frame_size_different;
+    uint16_t render_width_minus_1;
+    uint16_t render_height_minus_1;
+    uint32_t RenderWidth;
+    uint32_t RenderHeight;
+    int allow_intrabc;
+    int frame_refs_short_signaling;
+    uint8_t last_frame_idx;
+    uint8_t gold_frame_idx;
+    uint8_t ref_frame_idx[7];
+    uint8_t delta_frame_id_minus_1[7];
+    int found_ref;
+    int allow_high_precision_mv;
+    struct {
+        int is_filter_switchable;
+        uint8_t interpolation_filter;
+    } interpolation_filter;
+    int is_motion_mode_switchable;
+    int use_ref_frame_mvs;
+    int disable_frame_end_update_cdf;
+    struct {
+        int uniform_tile_spacing_flag;
+        uint16_t TileRows;
+        uint16_t TileCols;
+        uint32_t context_update_tile_id;
+        uint8_t tile_size_bytes_minus_1;
+    } tile_info;
+    struct {
+        uint8_t base_q_idx;
+        int diff_uv_delta;
+        int using_qmatrix;
+        uint8_t qm_y;
+        uint8_t qm_u;
+        uint8_t qm_v;
+    } quantization_params;
+    struct {
+        int segmentation_enabled;
+        int segmentation_update_map;
+        int segmentation_temporal_update;
+        int segmentation_update_data;
+    } segmentation_params;
+    struct {
+        int delta_q_present;
+        uint8_t delta_q_res;
+    } delta_q_params;
+    struct {
+        int delta_lf_present;
+        uint8_t delta_lf_res;
+        int delta_lf_multi;
+    } delta_lf_params;
+    struct {
+        uint8_t loop_filter_level[4];
+        uint8_t loop_filter_sharpness;
+        int loop_filter_delta_enabled;
+        int loop_filter_delta_update;
+        int update_ref_delta[8];
+        int8_t loop_filter_ref_deltas[8];
+        int update_mode_delta[8];
+        int8_t loop_filter_mode_deltas[8];
+    } loop_filter_params;
+    struct {
+        uint8_t cdef_damping_minus_3;
+        uint8_t cdef_bits;
+        uint8_t cdef_y_pri_strength[8];
+        uint8_t cdef_y_sec_strength[8];
+        uint8_t cdef_uv_pri_strength[8];
+        uint8_t cdef_uv_sec_strength[8];
+    } cdef_params;
+    struct {
+        uint8_t lr_type[3];
+        uint8_t lr_unit_shift;
+        int lr_uv_shift;
+    } lr_params;
+    int tx_mode_select;
+    int skip_mode_present;
+    int reference_select;
+    int allow_warped_motion;
+    int reduced_tx_set;
+    struct {
+        uint8_t gm_type[8];
+        int32_t gm_params[8][6];
+        uint32_t prev_gm_params[8][6];
+    } global_motion_params;
+    OBPFilmGrainParameters film_grain_params;
+} OBPFrameHeader;
+
+/*
+ * Tile Group OBU.
+ */
+typedef struct OBPTileGroup {
+    uint16_t NumTiles;
+    int tile_start_and_end_present_flag;
+    uint16_t tg_start;
+    uint16_t tg_end;
+    uint64_t TileSize[4096];
+} OBPTileGroup;
 
 /*
  * Tile List OBU
@@ -311,6 +485,44 @@ typedef struct OBPError {
     size_t size;
 } OBPError;
 
+/***************************
+ * Private API Structures. *
+ ***************************/
+
+ /*
+  * Various bits of state required for parsing uncompressed_header(), such as reference
+  * management.
+  *
+  * Do not touch the values of these members. They are for internal obuparser use only.
+  */
+ typedef struct OBPState {
+     /* Redundant Frame Header things. */
+     OBPFrameHeader prev;
+     int prev_filled;
+
+     /* For use only on OBU_FRAME parsing. */
+     size_t frame_header_end_pos;
+
+     /* Frame state. */
+     OBPFrameType RefFrameType[8];
+     uint8_t RefValid[8];
+     uint8_t RefOrderHint[8];
+     uint8_t OrderHint[8];
+     uint8_t RefFrameId[8];
+     uint32_t RefUpscaledWidth[8];
+     uint32_t RefFrameHeight[8];
+     uint32_t RefRenderWidth[8];
+     uint32_t RefRenderHeight[8];
+     int32_t RefFrameSignBias[8];
+     OBPFilmGrainParameters RefGrainParams[8];
+     uint8_t order_hint;
+     uint32_t SavedGmParams[8][8][6];
+     int SavedFeatureEnabled[8][8][8];
+     int16_t SavedFeatureData[8][8][8];
+     int8_t SavedLoopFilterRefDeltas[8][8];
+     int8_t SavedLoopFilterModeDeltas[8][8];
+ } OBPState;
+
 /******************
  * API functions. *
  ******************/
@@ -354,6 +566,72 @@ int obp_get_next_obu(uint8_t *buf, size_t buf_size, OBPOBUType *obu_type, ptrdif
  *     0 on success, -1 on error.
  */
 int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq_header, OBPError *err);
+
+/*
+ * obp_parse_frame_header parses a frame header OBU and fills out the fields in a user-provided
+ * OBPFrameHeader structure.
+ *
+ * Input:
+ *     buf          - Input OBU buffer. This is expected to *NOT* contain the OBU header.
+ *     buf_size     - Size of the input OBU buffer.
+ *     state        - An opaque state structure. Must be zeroed by the user on first use.
+ *     temporal_id  - A temporal ID previously obtained from obu_parse_sequence header.
+ *     spatial_id   - A temporal ID previously obtained from obu_parse_sequence header.
+ *     err          - An error buffer and buffer size to write any error messages into.
+ *
+ * Output:
+ *     frame_header    - A user provided struture that will be filled in with all the parsed data.
+ *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
+ *
+ * Returns:
+ *     0 on success, -1 on error.
+ */
+int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq_header, OBPState *state,
+                           int temporal_id, int spatial_id, OBPFrameHeader *frame_header, int *SeenFrameHeader, OBPError *err);
+
+/*
+ * obp_parse_frame parses a frame OBU and fills out the fields in user-provided OBPFrameHeader
+ * and OBPTileGroup structures.
+ *
+ * Input:
+ *     buf          - Input OBU buffer. This is expected to *NOT* contain the OBU header.
+ *     buf_size     - Size of the input OBU buffer.
+ *     state        - An opaque state structure. Must be zeroed by the user on first use.
+ *     temporal_id  - A temporal ID previously obtained from obu_parse_sequence header.
+ *     spatial_id   - A temporal ID previously obtained from obu_parse_sequence header.
+ *     err          - An error buffer and buffer size to write any error messages into.
+ *
+ * Output:
+ *     frame_header    - A user provided struture that will be filled in with all the parsed data.
+ *     tile_group      - A user provided struture that will be filled in with all the parsed data.
+ *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
+ *
+ * Returns:
+ *     0 on success, -1 on error.
+ */
+int obp_parse_frame(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq_header, OBPState *state,
+                    int temporal_id, int spatial_id, OBPFrameHeader *frame_header, OBPTileGroup *tile_group,
+                    int *SeenFrameHeader, OBPError *err);
+
+/*
+ * obp_parse_tile_group parses a tile group OBU and fills out the fields in a
+ * user-provided OBPTileGroup structure.
+ *
+ * Input:
+ *     buf          - Input OBU buffer. This is expected to *NOT* contain the OBU header.
+ *     buf_size     - Size of the input OBU buffer.
+ *     frame_header - A filled in frame header OBU previous seen.
+ *     err          - An error buffer and buffer size to write any error messages into.
+ *
+ * Output:
+ *     tile_group      - A user provided struture that will be filled in with all the parsed data.
+ *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
+ *
+ * Returns:
+ *     0 on success, -1 on error.
+ */
+int obp_parse_tile_group(uint8_t *buf, size_t buf_size, OBPFrameHeader *frame_header, OBPTileGroup *tile_group,
+                         int *SeenFrameHeader, OBPError *err);
 
 /*
  * obp_parse_metadata parses a metadata OBU and fills out the fields in a user-provided OBPMetadata
