@@ -2132,7 +2132,6 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
     }
 
     /* Stash byte position for use in OBU_FRAME parsing. */
-    printf("br->bits_in_buf = %"PRIu8"\n", br->bits_in_buf);
     _obp_br_byte_alignment(br);
     state->frame_header_end_pos = _obp_br_get_pos(br);
 
