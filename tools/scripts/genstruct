@@ -1,0 +1,104 @@
+#!/usr/bin/env perl
+
+# Copyright (c) 2020, Derek Buitenhuis
+#
+# Permission to use, copy, modify, and/or distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+# I would advise against using this tool - it was just a simple tool to get the bare
+# bones of JSON printing done. They had to manually be cleaned up after to actually
+# compile and work. It's only here in case I need it again one day.
+
+use strict;
+use warnings;
+
+my @structs = ("OBPFrameHeader", "OBPSequenceHeader", "OBPFilmGrainParameters", "OBPMetadata", "OBPTileList", "OBPTileGroup");
+my %types = ("int" => "%d",
+             "size_t" => "%zu",
+             "OBPChromaSamplePosition" => "%d",
+             "OBPColorPrimaries" => "%d",
+             "OBPMatrixCoefficients" => "%d",
+             "OBPTransferCharacteristics" => "%d",
+             "OBPMetadataType" => "%d",
+             "OBPFrameType" => "%d",
+             "OBPFilmGrainParameters" => "REPLACEMEWITHAFUNCTIONCALL",
+             "uint16_t" => "%\"PRIu16\"",
+             "uint32_t" => "%\"PRIu32\"",
+             "uint64_t" => "%\"PRIu64\"",
+             "uint8_t" => "%\"PRIu8\"",
+             "int32_t" => "%\"PRId32\"",
+             "int8_t" => "%\"PRId8\"");
+
+print("#include <inttypes.h>\n".
+      "#include <stdint.h>\n".
+      "#include <stdio.h>\n\n".
+      "#include \"obuparse.h\"\n\n");
+
+foreach my $struct (@structs) {
+    open(my $h, "<", "../obuparse.h") || die("can't open header");
+
+    print("void print_$struct($struct *my_struct)\n{\n");
+    print("    printf(\"{\\n\");\n");
+
+    my $out = "";
+    my $started = 0;
+    my $instruct = "";
+    while (<$h>) {
+        chomp;
+        if (/typedef struct $struct \{/) {
+            $started = 1;
+            next;
+        } elsif (/} $struct;/){
+            $started = 0;
+            next;
+        }
+        next if (!$started);
+        if (/struct \{/) {
+            $instruct = "garbagename.";
+            $out .= "    printf(\"    \\\"garbagename\\\": {\\n\");\n"; # assumes only 1-depth embedded structs
+            next;
+        } elsif (/} .+/) {
+            s/\s+} (.+);$/$1/;
+            $instruct = "";
+            $out =~ s/garbagename/$_/g;
+            $out .= "    printf(\"    },\\n\");\n";
+            next;
+        }
+        s/^(\s+)/length($1)." "/e;
+        s/;//;
+        my @c = split(' ');
+        $out .= "    printf(\"";
+        $out .= " " x $c[0];
+        if ($c[2] =~ /\[/) {
+            $c[2] =~ s/(.+)\[(\d+)\]$/$1 $2/;
+            my ($name, $len) = split(' ', $c[2]);
+            $out .= "\\\"$name\\\": [\\n\");\n";
+            $out .= "    for (int i = 0; i < $len; i++) {\n";
+                $out .= "        printf(\"";
+                $out .= " " x $c[0];
+                $out .= "$types{$c[1]}\", my_struct->$instruct$name\[i\]);\n";
+                $out .= "        printf(\"%s\", i == $len - 1 ? \"\\n\" : \",\\n\");\n";
+            $out .= "    }\n";
+            $out .= "    printf(\"";
+            $out .= " " x $c[0];
+            $out .= "],\\n\");\n";
+        } else {
+            $out .= "\\\"$c[2]\\\": $types{$c[1]},\\n\", my_struct->$instruct$c[2]);\n";
+            # last member should have comma removed
+        }
+    }
+    print($out);
+    print("    printf(\"}\\n\");\n");
+    print("}\n\n");
+
+    close($h);
+}

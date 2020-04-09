@@ -51,5 +51,5 @@ out of being a work in progress.
 Tools
 -----
 
-The `tools` directory contains some example tools used during development. In the
-future, it will hopefully contain some more useful things like an OBU dump tool.
+The `tools` directory contains a simple tool to parse and serialize OBUs from
+an IVF file into JSON, called `dumpobu`.

@@ -36,14 +36,16 @@
 #include <string.h>
 
 #include "obuparse.h"
+#include "tools/json.h"
 
 int main(int argc, char *argv[])
 {
     FILE *ivf;
-    int ret = 0;
-    OBPSequenceHeader hdr = {0};
-    OBPState state = {0};
-    int seen_seq = 0;
+    int packet_count      = 0;
+    int ret               = 0;
+    OBPSequenceHeader hdr = { 0 };
+    OBPState state        = { 0 };
+    int seen_seq          = 0;
 
     if (argc < 2) {
         printf("Usage: %s file.ivf\n", argv[0]);
@@ -57,6 +59,7 @@ int main(int argc, char *argv[])
         goto end;
     }
 
+    /* Skip IVF global header. */
     ret = fseeko(ivf, 32, SEEK_SET);
     if (ret != 0) {
         printf("Failed to seek past IVF header.\n");
@@ -65,7 +68,6 @@ int main(int argc, char *argv[])
     }
 
     while (!feof(ivf))
-//    do
     {
         uint8_t frame_header[12];
         uint8_t *packet_buf;
@@ -89,7 +91,8 @@ int main(int argc, char *argv[])
                       (frame_header[1] << 8)  +
                       (frame_header[2] << 16) +
                       (frame_header[3] << 24);
-        printf("Packet Size = %zu\n", packet_size);
+
+        printf("{\"packet_number\": %d, \"packet_size\": %zu}\n", packet_count, packet_size);
 
         packet_buf = malloc(packet_size);
         if (packet_buf == NULL) {
@@ -105,6 +108,7 @@ int main(int argc, char *argv[])
             ret = 1;
             goto end;
         }
+        packet_count++;
 
         while (packet_pos < packet_size)
         {
@@ -124,7 +128,7 @@ int main(int argc, char *argv[])
                 goto end;
             }
 
-            printf("OBU info | obu_type = %d | offset = %td | obu_size = %zu | temporal_id = %d | spatial_id = %d\n",
+            printf("{\"obu_type\": %d, \"offset\": %td, \"obu_size\": %zu, \"temporal_id\": %d, \"spatial_id\": %d}\n",
                    obu_type, offset, obu_size, temporal_id, spatial_id);
 
             switch (obu_type) {
@@ -143,14 +147,11 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("w = %d h = %d\n", hdr.max_frame_width_minus_1 + 1, hdr.max_frame_height_minus_1 + 1);
-                printf("bitdepth = %d primaries = %d transfer = %d matrix = %d\n", hdr.color_config.BitDepth,
-                       hdr.color_config.color_primaries, hdr.color_config.transfer_characteristics,
-                       hdr.color_config.matrix_coefficients);
+                print_json_sequence_header(&hdr);
                 break;
             }
             case OBP_OBU_FRAME: {
-                OBPTileGroup tiles;
+                OBPTileGroup tiles = { 0 };
                 memset(&frame_hdr, 0, sizeof(frame_hdr));
                 if (!seen_seq) {
                     free(packet_buf);
@@ -165,30 +166,8 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("rw=%"PRId32" rh=%"PRId32"\n", frame_hdr.RenderWidth, frame_hdr.RenderHeight);
-                printf("TileRows=%"PRIu16" TileCols=%"PRIu16"\n", frame_hdr.tile_info.TileRows, frame_hdr.tile_info.TileCols);
-                printf("frame_refs_short_signaling = %"PRIu8"\n", frame_hdr.frame_refs_short_signaling);
-                printf("frame_type = %"PRIu8"\n", frame_hdr.frame_type);
-                printf("base_q_idx = %"PRIu8"\n", frame_hdr.quantization_params.base_q_idx);
-                printf("cdef_bits = %"PRIu8"\n", frame_hdr.cdef_params.cdef_bits);
-                for(int i = 0; i < 8; i++) {
-                    printf("cdef_y_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_pri_strength[i]);
-                    printf("cdef_y_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_sec_strength[i]);
-                    printf("cdef_uv_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_pri_strength[i]);
-                    printf("cdef_uv_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_sec_strength[i]);
-                }
-                for (int i = 0; i < 3; i++) {
-                    printf("lr_type = %d\n", frame_hdr.lr_params.lr_type[i]);
-                }
-                printf("lr_uv_shift=%d lr_unit_shift=%d\n", frame_hdr.lr_params.lr_uv_shift, frame_hdr.lr_params.lr_unit_shift);
-                printf("tx_mode_select = %d\n", frame_hdr.tx_mode_select);
-                printf("grain_seed = %d\n", frame_hdr.film_grain_params.grain_seed);
-                printf("point_cr_scaling[1] = %d\n", frame_hdr.film_grain_params.point_cr_scaling[1]);
-                printf("ar_coeffs_cr_plus_128[21] = %d\n", frame_hdr.film_grain_params.ar_coeffs_cr_plus_128[21]);
-                printf("NumTiles = %"PRIu16" tg_start = %"PRIu16" tg_end = %"PRIu16"\n", tiles.NumTiles, tiles.tg_start, tiles.tg_end);
-                for (uint16_t t = tiles.tg_start; t <= tiles.tg_end; t++) {
-                    printf("    TileSize[%"PRIu16"] = %"PRIu64"\n", t, tiles.TileSize[t]);
-                }
+                print_json_frame_header(&frame_hdr);
+                print_json_tile_group(&tiles);
                 break;
             }
             case OBP_OBU_REDUNDANT_FRAME_HEADER:
@@ -207,30 +186,11 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("rw=%"PRId32" rh=%"PRId32"\n", frame_hdr.RenderWidth, frame_hdr.RenderHeight);
-                printf("TileRows=%"PRIu16" TileCols=%"PRIu16"\n", frame_hdr.tile_info.TileRows, frame_hdr.tile_info.TileCols);
-                printf("frame_type = %"PRIu8"\n", frame_hdr.frame_type);
-                printf("base_q_idx = %"PRIu8"\n", frame_hdr.quantization_params.base_q_idx);
-                printf("cdef_bits = %"PRIu8"\n", frame_hdr.cdef_params.cdef_bits);
-                for(int i = 0; i < 8; i++) {
-                    printf("cdef_y_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_pri_strength[i]);
-                    printf("cdef_y_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_y_sec_strength[i]);
-                    printf("cdef_uv_pri_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_pri_strength[i]);
-                    printf("cdef_uv_sec_strength[%d] = %"PRIu8"\n", i, frame_hdr.cdef_params.cdef_uv_sec_strength[i]);
-                }
-                for (int i = 0; i < 3; i++) {
-                    printf("lr_type = %d\n", frame_hdr.lr_params.lr_type[i]);
-                }
-                printf("lr_uv_shift=%d lr_unit_shift=%d\n", frame_hdr.lr_params.lr_uv_shift, frame_hdr.lr_params.lr_unit_shift);
-                printf("tx_mode_select = %d\n", frame_hdr.tx_mode_select);
-                printf("grain_seed = %d\n", frame_hdr.film_grain_params.grain_seed);
-                printf("point_cr_scaling[1] = %d\n", frame_hdr.film_grain_params.point_cr_scaling[1]);
-                printf("ar_coeffs_cr_plus_128[21] = %d\n", frame_hdr.film_grain_params.ar_coeffs_cr_plus_128[21]);
-
+                print_json_frame_header(&frame_hdr);
                 break;
             }
             case OBP_OBU_TILE_LIST: {
-                OBPTileList tile_list = {0};
+                OBPTileList tile_list = { 0 };
                 ret = obp_parse_tile_list(packet_buf + packet_pos + offset, obu_size, &tile_list, &err);
                 if (ret < 0) {
                     free(packet_buf);
@@ -238,11 +198,11 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("tile list count: %"PRIu32"\n", ((uint32_t) tile_list.tile_count_minus_1) + 1);
+                print_json_tile_list(&tile_list);
                 break;
             }
             case OBP_OBU_TILE_GROUP: {
-                OBPTileGroup tiles = {0};
+                OBPTileGroup tiles = { 0 };
                 ret = obp_parse_tile_group(packet_buf + packet_pos + offset, obu_size, &frame_hdr, &tiles, &SeenFrameHeader, &err);
                 if (ret < 0) {
                     free(packet_buf);
@@ -250,14 +210,11 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("NumTiles = %"PRIu16" tg_start = %"PRIu16" tg_end = %"PRIu16"\n", tiles.NumTiles, tiles.tg_start, tiles.tg_end);
-                for (uint16_t t = tiles.tg_start; t <= tiles.tg_end; t++) {
-                    printf("    TileSize[%"PRIu16"] = %"PRIu64"\n", t, tiles.TileSize[t]);
-                }
+                print_json_tile_group(&tiles);
                 break;
             }
             case OBP_OBU_METADATA: {
-                OBPMetadata meta = {0};
+                OBPMetadata meta = { 0 };
                 ret = obp_parse_metadata(packet_buf + packet_pos + offset, obu_size, &meta, &err);
                 if (ret < 0) {
                     free(packet_buf);
@@ -265,7 +222,7 @@ int main(int argc, char *argv[])
                     ret = 1;
                     goto end;
                 }
-                printf("metadata_type = %d\n", meta.metadata_type);
+                print_json_metadata(&meta);
                 break;
             }
             default:
@@ -283,7 +240,6 @@ int main(int argc, char *argv[])
             goto end;
         }
     }
-    //} while(0);
 
 end:
     fclose(ivf);

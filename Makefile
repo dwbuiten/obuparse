@@ -6,7 +6,7 @@ all: libobuparse.so
 
 clean:
 	@rm -fv *.so *.o
-	@rm -fv tools/feedpackets tools/*.o
+	@rm -fv tools/obudump tools/*.o
 
 libobuparse.so: obuparse.o
 	$(CC) -Wl,--version-script,obuparse.v -shared $^ -o $@
@@ -17,7 +17,7 @@ install: all
 uninstall:
 	@rm -fv $(PREFIX)/lib/libobuparse.so
 
-tools: tools/feedpackets
+tools: tools/obudump
 
-tools/feedpackets: obuparse.o tools/feedpackets.o
-	$(CC) -o tools/feedpackets $^ -o $@
+tools/obudump: obuparse.o tools/obudump.o tools/json.o
+	$(CC) -o tools/obudump $^ -o $@
