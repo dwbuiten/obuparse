@@ -1,6 +1,6 @@
 PREFIX=/usr/local
 
-CFLAGS=-O3 -std=c99 -Wall -Wextra -g -I.
+CFLAGS=-O3 -std=c99 -Wall -Wextra -g -fPIC -I.
 
 all: libobuparse.so
 
