@@ -25,3 +25,9 @@ tools: tools/obudump
 
 tools/obudump: obuparse.o tools/obudump.o tools/json.o
 	$(CC) -o tools/obudump $^ -o $@
+
+install-tools: tools
+	@install -v tools/obudump $(PREFIX)/bin
+
+uninstall-tools:
+	@rm -fv $(PREFIX)/bin/obudump
