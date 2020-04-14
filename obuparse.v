@@ -1,4 +1,4 @@
-OBUPARSE_0 {
+OBUPARSE_1 {
     global: obp_*;
     local: *;
 };
