@@ -1899,9 +1899,11 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
             int32_t secondForwardHint = 0; /* Never declare by spec! Bug? */
             for (int i = 0; i < 7; i++) {
                 int32_t refHint = state->RefOrderHint[fh->ref_frame_idx[i]];
-                if (secondForwardIdx < 0 || _obp_get_relative_dist(refHint, secondForwardHint, seq) > 0) {
-                    secondForwardIdx  = i;
-                    secondForwardHint = refHint;
+                if (_obp_get_relative_dist(refHint, forwardHint, seq) < 0) {
+                    if (secondForwardIdx < 0 || _obp_get_relative_dist(refHint, secondForwardHint, seq) > 0) {
+                        secondForwardIdx  = i;
+                        secondForwardHint = refHint;
+                    }
                 }
             }
             if (secondForwardIdx < 0) {
