@@ -948,8 +948,23 @@ int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBP
             _obp_br(metadata->metadata_itut_t35.itu_t_t35_country_code_extension_byte, br, 8);
             offset++;
         }
-        metadata->metadata_itut_t35.itu_t_t35_payload_bytes       = buf + consumed + offset;
-        metadata->metadata_itut_t35.itu_t_t35_payload_bytes_size = buf_size - consumed - offset;
+        metadata->metadata_itut_t35.itu_t_t35_payload_bytes = buf + consumed + offset;
+        int non_zero_bytes_seen = 0;
+        /*
+         * OBUs with byte payloads at the end have a dumb property where you need to
+         * know the trailing bits *before* you parse the OBU, despite the way the spec
+         * the syntax displayed and defined. SO as a result, you need to find the *second*
+         * non-zero byte at the end of the OBU payload, rather than the last one, as
+         * the note in the ITU T.35 part of the spec says.
+         */
+        for (size_t i = buf_size - consumed - offset - 1; i > 0; i--) {
+            if (metadata->metadata_itut_t35.itu_t_t35_payload_bytes[i] != 0) {
+                non_zero_bytes_seen++;
+                if (non_zero_bytes_seen == 2) {
+                    metadata->metadata_itut_t35.itu_t_t35_payload_bytes_size = i + 1;
+                }
+            }
+        }
     } else if (metadata->metadata_type == OBP_METADATA_TYPE_TIMECODE) {
         _obp_br(metadata->metadata_timecode.counting_type, br, 5);
         _obp_br(metadata->metadata_timecode.full_timestamp_flag, br, 1);
