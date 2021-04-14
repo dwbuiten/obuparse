@@ -1141,7 +1141,7 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
     if (fh->frame_type == OBP_SWITCH_FRAME) {
         fh->frame_size_override_flag = 1;
     } else if (seq->reduced_still_picture_header) {
-        fh->frame_size_override_flag = 1;
+        fh->frame_size_override_flag = 0;
     } else {
         _obp_br(fh->frame_size_override_flag, br, 1);
     }
