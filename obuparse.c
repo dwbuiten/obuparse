@@ -2041,7 +2041,7 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
                 } else {
                     _obp_br(fh->film_grain_params.chroma_scaling_from_luma, br, 1);
                 }
-                if (seq->color_config.mono_chrome || fh->film_grain_params.chroma_scaling_from_luma || 
+                if (seq->color_config.mono_chrome || fh->film_grain_params.chroma_scaling_from_luma ||
                     (seq->color_config.subsampling_x == 1 && seq->color_config.subsampling_y == 1 &&
                      fh->film_grain_params.num_y_points == 0)) {
                      fh->film_grain_params.num_cb_points = 0;
