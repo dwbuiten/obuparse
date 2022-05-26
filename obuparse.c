@@ -90,7 +90,7 @@ static inline size_t _obp_br_get_pos(_OBPBitReader *br)
 #endif
 
 /************************************
- * Functions from AV1 spcification. *
+ * Functions from AV1 specification. *
  ************************************/
 
 static inline int _obp_leb128(uint8_t *buf, size_t size, uint64_t *value, ptrdiff_t *consumed, OBPError *err)
@@ -1448,7 +1448,7 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
         }
     } else {
         /* load_cdfs() not relevant to OBU parsing. */
-        /* load_preivous */
+        /* load_previous */
         int prevFrame = fh->ref_frame_idx[fh->primary_ref_frame];
         for (int i = 0; i > 8; i++) {
             for (int j = 0; j < 6; j++) {

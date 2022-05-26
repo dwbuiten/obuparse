@@ -105,7 +105,7 @@ typedef enum {
 /*
  * Color matrix coefficients.
  *
- * These matchISO/IEC 23091-4/ITU-T H.273.
+ * These match ISO/IEC 23091-4/ITU-T H.273.
  */
 typedef enum {
     OBP_MC_IDENTITY = 0,
@@ -229,7 +229,7 @@ typedef struct OBPSequenceHeader {
 } OBPSequenceHeader;
 
 /*
- * Film Grain Parameers.
+ * Film Grain Parameters.
  */
 typedef struct OBPFilmGrainParameters {
     int apply_grain;
@@ -542,7 +542,7 @@ typedef struct OBPError {
  *     offset      - The offset into the buffer where this OBU starts, excluding the OBU header.
  *     obu_size    - The size of the OBU, excluding the size of the OBU header.
  *     temporal_id - The temporal ID of the OBU.
- *     spatial_id  - The spatia ID of the OBU.
+ *     spatial_id  - The spatial ID of the OBU.
  *
  * Returns:
  *     0 on success, -1 on error.
@@ -560,7 +560,7 @@ int obp_get_next_obu(uint8_t *buf, size_t buf_size, OBPOBUType *obu_type, ptrdif
  *     err      - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     seq_header - A user provided struture that will be filled in with all the parsed data.
+ *     seq_header - A user provided structure that will be filled in with all the parsed data.
  *
  * Returns:
  *     0 on success, -1 on error.
@@ -576,11 +576,11 @@ int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *
  *     buf_size     - Size of the input OBU buffer.
  *     state        - An opaque state structure. Must be zeroed by the user on first use.
  *     temporal_id  - A temporal ID previously obtained from obu_parse_sequence header.
- *     spatial_id   - A temporal ID previously obtained from obu_parse_sequence header.
+ *     spatial_id   - A spatial ID previously obtained from obu_parse_sequence header.
  *     err          - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     frame_header    - A user provided struture that will be filled in with all the parsed data.
+ *     frame_header    - A user provided structure that will be filled in with all the parsed data.
  *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
  *
  * Returns:
@@ -598,13 +598,13 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
  *     buf_size     - Size of the input OBU buffer.
  *     state        - An opaque state structure. Must be zeroed by the user on first use.
  *     temporal_id  - A temporal ID previously obtained from obu_parse_sequence header.
- *     spatial_id   - A temporal ID previously obtained from obu_parse_sequence header.
+ *     spatial_id   - A spatial ID previously obtained from obu_parse_sequence header.
  *     err          - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     frame_header    - A user provided struture that will be filled in with all the parsed data.
- *     tile_group      - A user provided struture that will be filled in with all the parsed data.
- *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
+ *     frame_header    - A user provided structure that will be filled in with all the parsed data.
+ *     tile_group      - A user provided structure that will be filled in with all the parsed data.
+ *     SeenFrameHeader - Whether or not a frame header has been seen. Tracking variable as per AV1 spec.
  *
  * Returns:
  *     0 on success, -1 on error.
@@ -620,12 +620,12 @@ int obp_parse_frame(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq_header
  * Input:
  *     buf          - Input OBU buffer. This is expected to *NOT* contain the OBU header.
  *     buf_size     - Size of the input OBU buffer.
- *     frame_header - A filled in frame header OBU previous seen.
+ *     frame_header - A filled in frame header OBU previously seen.
  *     err          - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     tile_group      - A user provided struture that will be filled in with all the parsed data.
- *     SeenFrameHeader - Whether or not a frame header has beee seen. Tracking variable as per AV1 spec.
+ *     tile_group      - A user provided structure that will be filled in with all the parsed data.
+ *     SeenFrameHeader - Whether or not a frame header has been seen. Tracking variable as per AV1 spec.
  *
  * Returns:
  *     0 on success, -1 on error.
@@ -636,7 +636,7 @@ int obp_parse_tile_group(uint8_t *buf, size_t buf_size, OBPFrameHeader *frame_he
 /*
  * obp_parse_metadata parses a metadata OBU and fills out the fields in a user-provided OBPMetadata
  * structure. This OBU's returned payload is *NOT* safe to use once the user-provided 'buf' has
- * been freed, since it may fill the structure with pointers to offsets that data.
+ * been freed, since it may fill the structure with pointers to offsets in that data.
  *
  * Input:
  *     buf      - Input OBU buffer. This is expected to *NOT* contain the OBU header.
@@ -644,7 +644,7 @@ int obp_parse_tile_group(uint8_t *buf, size_t buf_size, OBPFrameHeader *frame_he
  *     err      - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     metadata - A user provided struture that will be filled in with all the parsed data.
+ *     metadata - A user provided structure that will be filled in with all the parsed data.
  *
  * Returns:
  *     0 on success, -1 on error.
@@ -654,7 +654,7 @@ int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBP
 /*
  * obp_parse_tile_list parses a tile list OBU and fills out the fields in a user-provided OBPTileList
  * structure. This OBU's returned payload is *NOT* safe to use once the user-provided 'buf' has
- * been freed, since it may fill the structure with pointers to offsets that data.
+ * been freed, since it may fill the structure with pointers to offsets in that data.
  *
  * Input:
  *     buf      - Input OBU buffer. This is expected to *NOT* contain the OBU header.
@@ -662,7 +662,7 @@ int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBP
  *     err      - An error buffer and buffer size to write any error messages into.
  *
  * Output:
- *     tile_list - A user provided struture that will be filled in with all the parsed data.
+ *     tile_list - A user provided structure that will be filled in with all the parsed data.
  *
  * Returns:
  *     0 on success, -1 on error.
