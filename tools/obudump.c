@@ -40,7 +40,7 @@
 
 int main(int argc, char *argv[])
 {
-    FILE *ivf;
+    FILE *ivf             = NULL;
     int packet_count      = 0;
     int ret               = 0;
     OBPSequenceHeader hdr = { 0 };
@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
     }
 
 end:
-    fclose(ivf);
+    if (ivf != NULL)
+        fclose(ivf);
+
     return ret;
 }
