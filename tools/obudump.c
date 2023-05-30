@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
     }
 
 end:
-    fclose(ivf);
+    if (ivf)
+        fclose(ivf);
+
     return ret;
 }
