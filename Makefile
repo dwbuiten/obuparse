@@ -27,12 +27,15 @@ libobuparse$(LIBSUF): obuparse.o
 	$(CC) $(LDFLAGS) -shared $^ -o $@
 
 install: all
+	@install -d $(PREFIX)/include
+	@install -d $(PREFIX)/lib
 	@install -v obuparse.h $(PREFIX)/include
 	@install -v libobuparse.a $(PREFIX)/lib/libobuparse.a
 ifneq ($(SYSTEM),MINGW)
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/lib/libobuparse$(LIBSUF).1
 	@ln -sv libobuparse$(LIBSUF).1 $(PREFIX)/lib/libobuparse$(LIBSUF)
 else
+	@install -d $(PREFIX)/bin
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/bin/libobuparse$(LIBSUF)
 endif
 
@@ -52,6 +55,7 @@ tools/obudump$(EXESUF): obuparse.o tools/obudump.o tools/json.o
 	$(CC) -o tools/obudump$(EXESUF) $^ -o $@
 
 install-tools: tools
+	@install -d $(PREFIX)/bin
 	@install -v tools/obudump$(EXESUF) $(PREFIX)/bin
 
 uninstall-tools:
