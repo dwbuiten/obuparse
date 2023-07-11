@@ -26,7 +26,12 @@ libobuparse.a: obuparse.o
 libobuparse$(LIBSUF): obuparse.o
 	$(CC) $(LDFLAGS) -shared $^ -o $@
 
-install: install-shared install-static
+install: install-header install-shared install-static
+
+install-header:
+	@install -d $(PREFIX)
+	@install -d $(PREFIX)/include
+	@install -v obuparse.h $(PREFIX)/include
 
 install-shared: libobuparse$(LIBSUF)
 	@install -d $(PREFIX)
