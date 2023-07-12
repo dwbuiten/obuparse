@@ -26,18 +26,15 @@ libobuparse.a: obuparse.o
 libobuparse$(LIBSUF): obuparse.o
 	$(CC) $(LDFLAGS) -shared $^ -o $@
 
-install: install-header install-shared install-static
+install: install-shared install-static
 
 install-header:
 	@install -d $(PREFIX)
 	@install -d $(PREFIX)/include
 	@install -v obuparse.h $(PREFIX)/include
 
-install-shared: libobuparse$(LIBSUF)
-	@install -d $(PREFIX)
-	@test -d $(PREFIX)/include || mkdir $(PREFIX)/include
+install-shared: libobuparse$(LIBSUF) install-header
 	@install -d $(PREFIX)/lib
-	@test -f $(PREFIX)/include/obuparse.h || install -v obuparse.h $(PREFIX)/include
 ifneq ($(SYSTEM),MINGW)
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/lib/libobuparse$(LIBSUF).1
 	@ln -sv libobuparse$(LIBSUF).1 $(PREFIX)/lib/libobuparse$(LIBSUF)
@@ -46,11 +43,8 @@ else
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/bin/libobuparse$(LIBSUF)
 endif
 
-install-static: libobuparse.a
-	@install -d $(PREFIX)
-	@test -d $(PREFIX)/include || mkdir $(PREFIX)/include
+install-static: libobuparse.a install-header
 	@install -d $(PREFIX)/lib
-	@test -f $(PREFIX)/include/obuparse.h || install -v obuparse.h $(PREFIX)/include
 	@install -v libobuparse.a $(PREFIX)/lib/libobuparse.a
 
 uninstall:
