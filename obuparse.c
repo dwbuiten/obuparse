@@ -434,7 +434,7 @@ static inline int _obp_read_delta_q(_OBPBitReader *br, int32_t *out, OBPError *e
             return ret;
         *out = val;
     } else {
-        *out = 1;
+        *out = 0;
     }
     return 0;
 }
