@@ -37,6 +37,7 @@ install-shared: libobuparse$(LIBSUF) install-header
 	@install -d $(PREFIX)/lib
 ifneq ($(SYSTEM),MINGW)
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/lib/libobuparse$(LIBSUF).1
+	@rm -fv $(PREFIX)/lib/libobuparse$(LIBSUF)
 	@ln -sv libobuparse$(LIBSUF).1 $(PREFIX)/lib/libobuparse$(LIBSUF)
 else
 	@install -d $(PREFIX)/bin
