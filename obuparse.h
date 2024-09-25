@@ -17,6 +17,10 @@
 #ifndef OBUPARSE_H
 #define OBUPARSE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -668,5 +672,9 @@ int obp_parse_metadata(uint8_t *buf, size_t buf_size, OBPMetadata *metadata, OBP
  *     0 on success, -1 on error.
  */
 int obp_parse_tile_list(uint8_t *buf, size_t buf_size, OBPTileList *tile_list, OBPError *err);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
