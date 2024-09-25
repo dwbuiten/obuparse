@@ -551,7 +551,7 @@ int obp_get_next_obu(uint8_t *buf, size_t buf_size, OBPOBUType *obu_type, ptrdif
         *size   = buf_size - (size_t) pos;
     }
 
-    if (*size > buf_size - (size_t) offset) {
+    if (*size > buf_size - (size_t) *offset) {
         snprintf(err->error, err->size, "Invalid OBU size: larger than remaining buffer.");
         return -1;
     }
