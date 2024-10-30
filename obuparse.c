@@ -573,7 +573,7 @@ int obp_parse_sequence_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *
         seq_header->initial_display_delay_present_flag           = 0;
         seq_header->operating_points_cnt_minus_1                 = 0;
         seq_header->operating_point_idc[0]                       = 0;
-        seq_header->seq_level_idx[0]                             = 0;
+        _obp_br(seq_header->seq_level_idx[0], br, 5);
         seq_header->seq_tier[0]                                  = 0;
         seq_header->decoder_model_present_for_this_op[0]         = 0;
         seq_header->initial_display_delay_present_for_this_op[0] = 0;
