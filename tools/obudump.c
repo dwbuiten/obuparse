@@ -38,6 +38,39 @@
 #include "obuparse.h"
 #include "tools/json.h"
 
+const char *obu_type_to_str(int obu_type)
+{
+    switch (obu_type) {
+        case OBP_OBU_SEQUENCE_HEADER:
+            return "OBU_SEQUENCE_HEADER";
+        case OBP_OBU_TEMPORAL_DELIMITER:
+            return "OBU_TEMPORAL_DELIMITER";
+        case OBP_OBU_FRAME_HEADER:
+            return "OBU_FRAME_HEADER";
+        case OBP_OBU_TILE_GROUP:
+            return "OBU_TILE_GROUP";
+        case OBP_OBU_METADATA:
+            return "OBU_METADATA";
+        case OBP_OBU_FRAME:
+            return "OBU_FRAME";
+        case OBP_OBU_REDUNDANT_FRAME_HEADER:
+            return "OBU_REDUNDANT_FRAME_HEADER";
+        case OBP_OBU_TILE_LIST:
+            return "OBU_TILE_LIST";
+        case OBP_OBU_PADDING:
+            return "OBU_PADDING";
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+            return "RESERVED";
+        default:
+            return "INVALID";
+    }
+}
+
 int main(int argc, char *argv[])
 {
     FILE *ivf             = NULL;
@@ -46,13 +79,18 @@ int main(int argc, char *argv[])
     OBPSequenceHeader hdr = { 0 };
     OBPState state        = { 0 };
     int seen_seq          = 0;
+    int verbose           = 0;
 
     if (argc < 2) {
-        printf("Usage: %s file.ivf\n", argv[0]);
+        printf("Usage: %s (--verbose) file.ivf\n", argv[0]);
         return 1;
     }
 
-    ivf = fopen(argv[1], "rb");
+    if (!strncmp(argv[1], "-v", 2) || !strncmp(argv[1], "--verbose", 9)) {
+        verbose = 1;
+    }
+
+    ivf = fopen(argv[argc - 1], "rb");
     if (ivf == NULL) {
         printf("Couldn't open '%s'.\n", argv[1]);
         ret = 1;
@@ -128,8 +166,13 @@ int main(int argc, char *argv[])
                 goto end;
             }
 
-            printf("{\"obu_type\": %d, \"offset\": %td, \"obu_size\": %zu, \"temporal_id\": %d, \"spatial_id\": %d}\n",
-                   obu_type, offset, obu_size, temporal_id, spatial_id);
+            if (verbose) {
+                printf("{\"obu_type\": %s, \"offset\": %td, \"obu_size\": %zu, \"temporal_id\": %d, \"spatial_id\": %d}\n",
+                       obu_type_to_str(obu_type), offset, obu_size, temporal_id, spatial_id);
+            } else {
+                printf("{\"obu_type\": %d, \"offset\": %td, \"obu_size\": %zu, \"temporal_id\": %d, \"spatial_id\": %d}\n",
+                       obu_type, offset, obu_size, temporal_id, spatial_id);
+            }
 
             switch (obu_type) {
             case OBP_OBU_TEMPORAL_DELIMITER: {
