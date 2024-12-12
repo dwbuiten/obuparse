@@ -1,4 +1,4 @@
-PREFIX=/usr/local
+PREFIX ?= /usr/local
 
 CFLAGS  := -O3 -std=c99 -Wall -Wextra -g -fPIC -I. $(CPPFLAGS)
 LDFLAGS +=
