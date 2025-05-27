@@ -518,7 +518,7 @@ int obp_get_next_obu(uint8_t *buf, size_t buf_size, OBPOBUType *obu_type, ptrdif
     }
 
     if (obu_extension_flag) {
-        if (buf_size < 1) {
+        if (buf_size < 2) {
             snprintf(err->error, err->size, "Buffer is too small to contain an OBU extension header.");
             return -1;
         }
