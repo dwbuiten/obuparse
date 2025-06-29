@@ -1,0 +1,45 @@
+# cmake_uninstall.cmake.in
+# This script is configured by CMake and then executed to uninstall the project.
+# It removes only the files listed in the manifest and the project's
+# specific CMake package directory.
+
+if(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: \"@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt\"")
+endif()
+
+# --- Stage 1: Remove all files from the manifest ---
+message(STATUS "--- Uninstalling files ---")
+file(STRINGS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" installed_files)
+foreach(file ${installed_files})
+    message(STATUS "Removing: \"${file}\"")
+    if(EXISTS "${file}" OR IS_SYMLINK "${file}")
+        file(REMOVE "${file}")
+    else()
+        message(STATUS "File does not exist, skipping: \"${file}\"")
+    endif()
+endforeach()
+
+# --- Stage 2: Remove the project's specific CMake directory ---
+# This path is taken directly from the install() command in CMakeLists.txt
+set(package_dir "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/cmake/obuparse")
+
+if(EXISTS "${package_dir}")
+    message(STATUS "--- Cleaning up package directory ---")
+    # Check if the directory is now empty
+    file(GLOB children LIST_DIRECTORIES false "${package_dir}/*")
+    if(NOT children)
+        message(STATUS "Removing empty directory: \"${package_dir}\"")
+        execute_process(
+            COMMAND "@CMAKE_COMMAND@" -E rm -rf "${package_dir}"
+            RESULT_VARIABLE res
+        )
+
+        if(NOT res EQUAL 0)
+            message(WARNING "Could not remove directory: \"${package_dir}\". It may be locked by another process.")
+        endif()
+    else()
+        message(STATUS "Package directory is not empty, skipping: \"${package_dir}\"")
+    endif()
+endif()
+
+message(STATUS "Uninstallation complete.")

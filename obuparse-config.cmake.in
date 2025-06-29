@@ -1,0 +1,8 @@
+# obuparse-config.cmake.in
+# This file is configured by CMake and installed with the library.
+# It helps other projects find the OBUParse targets.
+
+@PACKAGE_INIT@
+
+# Include the file that contains the imported target definitions.
+include("${CMAKE_CURRENT_LIST_DIR}/OBUParseTargets.cmake")
