@@ -61,9 +61,27 @@ add_executable(obudump
     tools/obudump.c
     tools/json.c
 )
-# Always link the tool statically. This is now guaranteed to exist on all platforms.
-target_link_libraries(obudump PRIVATE OBUParse::static)
 target_include_directories(obudump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if(TARGET OBUParse::shared)
+    target_link_libraries(obudump PRIVATE OBUParse::shared)
+else()
+    target_link_libraries(obudump PRIVATE OBUParse::static)
+endif()
+
+# --- RPATH Handling for obudump tool ---
+if(UNIX AND TARGET obudump AND TARGET OBUParse::shared)
+    # This handles the build tree. The executable is in build/bin, the library is in build/lib.
+    # The RPATH needs to point to the library directory.
+    set_property(TARGET obudump PROPERTY
+        BUILD_RPATH "${CMAKE_BINARY_DIR}/lib"
+    )
+
+    # This handles the install tree. The path is relative from the installed bin/ directory
+    # to the lib/ directory.
+    set_property(TARGET obudump PROPERTY
+        INSTALL_RPATH "\$ORIGIN/../lib"
+    )
+endif()
 
 # --- Installation ---
 include(GNUInstallDirs)
