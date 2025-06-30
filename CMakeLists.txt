@@ -31,6 +31,11 @@ if(BUILD_SHARED_LIBS) # This block will now be skipped on MSVC
         OUTPUT_NAME "obuparse"
         VERSION ${PROJECT_VERSION}
         SOVERSION 1
+        EXPORT_NAME "shared"
+    )
+    target_include_directories(obuparse_shared PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
     )
     add_library(OBUParse::shared ALIAS obuparse_shared)
 endif()
@@ -43,6 +48,11 @@ if(BUILD_STATIC_LIBS)
     else()
         set_target_properties(obuparse_static PROPERTIES OUTPUT_NAME "obuparse")
     endif()
+    set_target_properties(obuparse_static PROPERTIES EXPORT_NAME "static")
+    target_include_directories(obuparse_static PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<INSTALL_INTERFACE:include>
+    )
     add_library(OBUParse::static ALIAS obuparse_static)
 endif()
 
@@ -52,7 +62,7 @@ add_executable(obudump
     tools/json.c
 )
 # Always link the tool statically. This is now guaranteed to exist on all platforms.
-target_link_libraries(obudump PRIVATE obuparse_static)
+target_link_libraries(obudump PRIVATE OBUParse::static)
 target_include_directories(obudump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # --- Installation ---
