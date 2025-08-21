@@ -1626,6 +1626,14 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
         DeltaQVDc = 0;
         DeltaQVAc = 0;
     }
+
+    /* Store the DeltaQ values in the frame header structure */
+    fh->quantization_params.DeltaQYDc = DeltaQYDc;
+    fh->quantization_params.DeltaQUDc = DeltaQUDc;
+    fh->quantization_params.DeltaQUAc = DeltaQUAc;
+    fh->quantization_params.DeltaQVDc = DeltaQVDc;
+    fh->quantization_params.DeltaQVAc = DeltaQVAc;
+
     _obp_br(fh->quantization_params.using_qmatrix, br, 1);
     if (fh->quantization_params.using_qmatrix) {
         _obp_br(fh->quantization_params.qm_y, br, 4);

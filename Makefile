@@ -11,7 +11,7 @@ ifneq (,$(findstring mingw,$(CC)))
 	SYSTEM=MINGW
 else
 	LIBSUF=.so
-	LDFLAGS=-Wl,--version-script,obuparse.v -Wl,-soname,libobuparse.so.1
+	LDFLAGS=-Wl,--version-script,obuparse.v -Wl,-soname,libobuparse.so.2
 endif
 
 all: libobuparse$(LIBSUF) libobuparse.a

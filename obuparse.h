@@ -329,6 +329,11 @@ typedef struct OBPFrameHeader {
         uint8_t qm_y;
         uint8_t qm_u;
         uint8_t qm_v;
+        int32_t DeltaQYDc;
+        int32_t DeltaQUDc;
+        int32_t DeltaQUAc;
+        int32_t DeltaQVDc;
+        int32_t DeltaQVAc;
     } quantization_params;
     struct {
         int segmentation_enabled;
