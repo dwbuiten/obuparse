@@ -36,9 +36,9 @@ install-header:
 install-shared: libobuparse$(LIBSUF) install-header
 	@install -d $(PREFIX)/lib
 ifneq ($(SYSTEM),MINGW)
-	@install -v libobuparse$(LIBSUF) $(PREFIX)/lib/libobuparse$(LIBSUF).1
+	@install -v libobuparse$(LIBSUF) $(PREFIX)/lib/libobuparse$(LIBSUF).2
 	@rm -fv $(PREFIX)/lib/libobuparse$(LIBSUF)
-	@ln -sv libobuparse$(LIBSUF).1 $(PREFIX)/lib/libobuparse$(LIBSUF)
+	@ln -sv libobuparse$(LIBSUF).2 $(PREFIX)/lib/libobuparse$(LIBSUF)
 else
 	@install -d $(PREFIX)/bin
 	@install -v libobuparse$(LIBSUF) $(PREFIX)/bin/libobuparse$(LIBSUF)
@@ -52,7 +52,7 @@ uninstall:
 	@rm -fv $(PREFIX)/include/obuparse.h
 	@rm -fv $(PREFIX)/lib/libobuparse.a
 ifneq ($(SYSTEM),MINGW)
-	@rm -fv $(PREFIX)/lib/libobuparse$(LIBSUF).1
+	@rm -fv $(PREFIX)/lib/libobuparse$(LIBSUF).2
 	@rm -fv $(PREFIX)/lib/libobuparse$(LIBSUF)
 else
 	@rm -fv $(PREFIX)/bin/libobuparse$(LIBSUF)
