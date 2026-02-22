@@ -1577,6 +1577,11 @@ int obp_parse_frame_header(uint8_t *buf, size_t buf_size, OBPSequenceHeader *seq
         /*MiRowStarts[i]          = MiRows*/;
         fh->tile_info.TileRows = i;
         TileRowsLog2           = _obp_tile_log2(1, fh->tile_info.TileRows);
+
+        if (fh->tile_info.TileCols > 64 || fh->tile_info.TileRows > 64) {
+            snprintf(err->error, err->size, "Invalid numbers of tile rows/cols: (%"PRIu16"/%"PRIu16")", fh->tile_info.TileCols, fh->tile_info.TileRows);
+            return -1;
+        }
     }
     if (TileColsLog2 > 0 || TileRowsLog2 > 0) {
         _obp_br(fh->tile_info.context_update_tile_id, br, (TileColsLog2 + TileRowsLog2));
