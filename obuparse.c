@@ -849,7 +849,7 @@ int obp_parse_tile_group(uint8_t *buf, size_t buf_size, OBPFrameHeader *frame_he
             }
             tile_size_minus_1             = _obp_le(buf + pos, TileSizeBytes);
             tile_group->TileSize[TileNum] = tile_size_minus_1 + 1;
-            if (sz < tile_group->TileSize[TileNum]) {
+            if (sz < tile_group->TileSize[TileNum] + TileSizeBytes) {
                 snprintf(err->error, err->size, "Not enough bytes to contain TileSize for tile %"PRIu16".", TileNum);
                 return -1;
             }
